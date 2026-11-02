@@ -2,6 +2,10 @@
 
 A playable bluffing card game for one human and two AI opponents, built with React, Tailwind CSS, Lucide icons, and Vite.
 
+## Play online
+
+[Play The Phantom Stack](https://phantom-stack-table.turfycod2.chatgpt.site/)
+
 ## Run locally
 
 Requires Node.js 20.19+ or 22.12+.
