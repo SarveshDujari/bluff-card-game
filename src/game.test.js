@@ -1,0 +1,10 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {fresh,reduce,aiPlay} from './game.js';
+const card=(id,rank='2')=>({id,rank,suit:'♠'});
+test('deal has 132 unique cards and equal hands',()=>{const s=fresh();assert.deepEqual(s.hands.map(h=>h.length),[44,44,44]);assert.equal(new Set(s.hands.flat().map(c=>c.id)).size,132)});
+test('final card waits for challenge; caught bluffer takes full pile',()=>{let s={...fresh(),rank:'2',hands:[[card(1,'3')],[card(2)],[card(3)]],pile:[card(4)]};s=reduce(s,{type:'PLAY',player:0,ids:[1]});assert.equal(s.phase,'challenge');assert.equal(s.winner,null);s=reduce(s,{type:'CALL',player:1});assert.equal(s.hands[0].length,2);assert.equal(s.turn,1);assert.equal(s.canChoose,true);assert.equal(s.phase,'reveal')});
+test('truthful final card wins after false challenge resolution',()=>{let s={...fresh(),rank:'2',hands:[[card(1)],[card(2)],[card(3)]]};s=reduce(s,{type:'PLAY',player:0,ids:[1]});s=reduce(s,{type:'CALL',player:2});assert.equal(s.hands[2].length,2);s=reduce(s,{type:'CONTINUE'});assert.equal(s.winner,0);assert.equal(s.phase,'over')});
+test('three passes burn pile and return lead to last player',()=>{let s={...fresh(),pile:[card(1)],lastPlayer:2};for(const player of [0,1,2])s=reduce(s,{type:'PASS',player});assert.equal(s.pile.length,0);assert.equal(s.turn,2);assert.equal(s.canChoose,true)});
+test('stale timer cannot advance a resolved challenge',()=>{let s=reduce(fresh(),{type:'PLAY',player:0,ids:[]});const old=s.seq;s=reduce(s,{type:'PASS',player:0});assert.equal(reduce(s,{type:'ACCEPT',seq:old}),s)});
+test('many AI games finish and preserve card accounting',()=>{for(let game=0;game<8;game++){let s=fresh(),burned=0;for(let move=0;move<15000&&s.phase!=='over';move++){const before=s;let a;if(s.phase==='turn')a=aiPlay(s);else if(s.phase==='challenge')a=Math.random()<.35?{type:'CALL',player:(s.last.player+1)%3}:{type:'ACCEPT'};else a={type:'CONTINUE'};s=reduce(s,a);if(a.type==='PASS'&&before.passes===2)burned+=before.pile.length;assert.equal(s.hands.flat().length+s.pile.length+burned,132);}assert.equal(s.phase,'over')}});
